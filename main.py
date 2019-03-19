@@ -134,15 +134,19 @@ class WebhookHandler(webapp2.RequestHandler):
             return
         
         def get_datafilename(pessoa):
-            return file_path + 'data_' + pessoa + '.txt'
-        
+            
+            if pessoa == 'chamada':
+                return arquivo_chamada
+            else:
+                return file_path + 'data_' + pessoa + '.txt'
+
         def file_exists(gcs_file):
             try:
                 gcs.stat(gcs_file)
-                logging.info('arquivo chamada existe')
+                logging.info('arquivo existe')
                 return True
             except Exception as e:
-                logging.info('arquivo chamada não existe')
+                logging.info('arquivo nao existe')
                 return False
         
         def cria_chamada(filepath):
@@ -250,6 +254,8 @@ class WebhookHandler(webapp2.RequestHandler):
                     comando = 'vomit'
             elif ' ' in texto:
                 comando = 'get_numero'
+            elif texto == 'chamada':
+                comando = 'chamada'
             else:
                 comando = 'random'
             
