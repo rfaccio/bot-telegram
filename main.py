@@ -124,8 +124,7 @@ class WebhookHandler(webapp2.RequestHandler):
         fr = message.get('from')
         chat = message['chat']
         chat_id = chat['id']        
-        chamada = []        
-        frases = []
+        chamada = []
         file_path = '/' + bucket_name + '/'        
         arquivo_chamada = file_path + 'chamada.txt'  
 
