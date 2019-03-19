@@ -10,7 +10,6 @@ import unicodedata
 
 # for sending images
 from PIL import Image
-import multipart
 
 # standard app engine imports
 from google.appengine.api import urlfetch
@@ -31,7 +30,7 @@ my_default_retry_params = gcs.RetryParams(initial_delay=0.2,
 gcs.set_default_retry_params(my_default_retry_params)
 
 #token definido em arquivo config.py
-TOKEN = config.botToken
+TOKEN = config.TOKEN
 
 #
 BASE_URL = BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
@@ -126,12 +125,18 @@ class WebhookHandler(webapp2.RequestHandler):
         chat_id = chat['id']
 
         file_path = '/dale-bot.appspot.com/data_'
-
         frases = []
+        chamada = []
+
+        arquivo_chamada = file_path + chamada + '.txt'
+        with gcs.open(arquivo_chamada) as open_file:
+                    for line in open_file:
+                        line = line.decode('utf-8')
+                        chamada.append(line.rstrip())
 
         if not text:
             logging.info('no text')
-            return        
+            return
         
         #Envia o texto de resposta para o chat
         def reply(msg=None, img=None):
@@ -214,8 +219,34 @@ class WebhookHandler(webapp2.RequestHandler):
                 tam = len(frases)
                 i = int(numero) - 1
                 if 0 <= i < tam:
-                    reply(frases[i])                
+                    reply(frases[i])
 
+            elif command == 'add_pessoa':
+                pessoa = command.split(' ', 1)[1]
+                if not pessoa in chamada:
+                    #adiciona
+                    chamada.append(pessoa)
+                    #cria arquivo de frases novo
+                    novo_arquivo = 'data_' + pessoa + '.txt'
+
+                    try:
+                        write_retry_params = gcs.RetryParams(backoff_factor=1.1)
+                        with gcs.open(arquivo_chamada, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
+                            for line in chamada:
+                                write_to_file.write("%s\n" % (line.encode('utf-8')))
+
+                        with gcs.open(novo_arquivo, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
+                            write_to_file.write("")
+                        
+                        #reply('Agora eu sei falar isso seu otario')
+
+                    except Exception as e:
+                        logging.exception(e)
+                        reply('\n\nDeu um pau no seu programinha, bro')
+
+                    reply('Pessoa adicionada')
+                else:
+                    reply('Pessoa já existe')
             else:
                 pessoa = command
                 filename = file_path + pessoa + '.txt'
