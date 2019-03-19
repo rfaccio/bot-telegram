@@ -31,8 +31,6 @@ gcs.set_default_retry_params(my_default_retry_params)
 
 #token definido em arquivo config.py
 TOKEN = config.TOKEN
-
-#
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 class EnableStatus(ndb.Model):
@@ -125,14 +123,14 @@ class WebhookHandler(webapp2.RequestHandler):
 
         #Envia o texto de resposta para o chat
         def reply(msg=None, img=None):
-            comandos.reply(chat_id,msg,img)
+            comandos.reply(BASE_URL,chat_id,msg,img)
         
         if text.startswith('/'):
             text = text.split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
             command = comandos.get_comando(text.lower().split("@")[0])
-            comandos.verifica_chamada()
+            check1, check2 = comandos.verifica_chamada()
             
             #COMANDOS
             #Liga e desliga o bot
@@ -162,6 +160,9 @@ class WebhookHandler(webapp2.RequestHandler):
             #Envia uma frase aleatória
             elif command == 'random':
                 reply(comandos.get_frase_random(text.lower().split("@")[0]))
+            #Envia a lista de chamada
+            elif command == 'chamada':
+                reply(comandos.get_vomit('chamada'))
             else:
                 reply('comando nao reconhecido')
 

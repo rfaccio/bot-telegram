@@ -16,20 +16,19 @@ import sys
 import unicodedata
 import config
 
-BASE_URL = 'https://api.telegram.org/bot' + config.TOKEN + '/'
-file_path = '/' + get_bucket_name() + '/'
-arquivo_chamada = file_path + 'chamada.txt'
-
 def get_bucket_name():
     bucket_name = os.environ.get('BUCKET_NAME',
                                     app_identity.get_default_gcs_bucket_name())
     return bucket_name
 
+file_path = '/' + get_bucket_name() + '/'
+arquivo_chamada = file_path + 'chamada.txt'
+
 #Envia o texto de resposta para o chat
-def reply(chat_id, msg=None, img=None):
+def reply(base_url,chat_id, msg=None, img=None):
     if msg:
         resp = urllib2.urlopen(
-            BASE_URL + 'sendMessage', urllib.urlencode({
+            base_url + 'sendMessage', urllib.urlencode({
                 'chat_id': str(chat_id),
                 'text': msg.encode('utf-8'),
             })
@@ -176,6 +175,8 @@ def get_comando(texto):
 
 def verifica_chamada():
     #verifica a necessidade de criar uma nova chamada
+    check1 = check2 = ''
+
     if not cria_chamada(arquivo_chamada):
         check1 = 'Erro ao criar ou abrir a chamada'
     if len(abre_data('chamada')) == 0:
