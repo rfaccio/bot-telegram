@@ -256,7 +256,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 comando = 'get_numero'
             elif texto == 'chamada':
                 comando = 'chamada'
-            else:
+            elif texto in chamada:
                 comando = 'random'
             
             return comando
@@ -304,25 +304,23 @@ class WebhookHandler(webapp2.RequestHandler):
             elif command == 'stop':
                 reply('Dormi')
                 setEnabled(chat_id, False)
-
             elif command == 'add_pessoa':
                 pessoa = text.split(' ', 1)[1]
                 reply(add_pessoa(pessoa))
-
             elif command == 'add_frase':
                 pessoa = text.split('_', 1)[0]
                 texto = text.split(' ', 1)[1]
-                reply(adiciona_frase(pessoa,texto))                
-                    
+                reply(adiciona_frase(pessoa,texto))
             elif command == 'vomit':
                 pessoa = text.split('_', 1)[0]                
                 reply(get_vomit(pessoa))
-
             elif command == 'get_numero':
                 pessoa, numero = text.split(' ', 1)
                 reply(get_frase_numero(pessoa, numero))
             elif command == 'random':
                 reply(get_frase_random(text.lower().split("@")[0]))
+            elif command == 'chamada':
+                reply(get_vomit('chamada'))
             else:
                 reply('comando nao reconhecido')
 
