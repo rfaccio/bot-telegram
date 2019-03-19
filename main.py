@@ -1,6 +1,5 @@
 # This Python file uses the following encoding: utf-8
 
-
 import StringIO
 import json
 import logging
@@ -22,6 +21,7 @@ import cloudstorage as gcs
 from google.appengine.api import app_identity
 
 import config
+import comandos
 
 my_default_retry_params = gcs.RetryParams(initial_delay=0.2,
                                           max_delay=5.0,
@@ -33,7 +33,7 @@ gcs.set_default_retry_params(my_default_retry_params)
 TOKEN = config.TOKEN
 
 #
-BASE_URL = BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
+BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 class EnableStatus(ndb.Model):
     # key name: str(chat_id)
@@ -114,187 +114,25 @@ class WebhookHandler(webapp2.RequestHandler):
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
-        bucket_name = os.environ.get('BUCKET_NAME',
-                                    app_identity.get_default_gcs_bucket_name())
-        update_id = body['update_id']
         message = body['message']
-        message_id = message.get('message_id')
-        date = message.get('date')
         text = message.get('text')
-        fr = message.get('from')
         chat = message['chat']
-        chat_id = chat['id']        
-        chamada = []        
-        frases = []
-        file_path = '/' + bucket_name + '/'        
-        arquivo_chamada = file_path + 'chamada.txt'  
+        chat_id = chat['id']
 
         if not text:
             logging.info('no text')
             return
-        
-        def get_datafilename(pessoa):
-            
-            if pessoa == 'chamada':
-                return arquivo_chamada
-            else:
-                return file_path + 'data_' + pessoa + '.txt'
-
-        def file_exists(gcs_file):
-            try:
-                gcs.stat(gcs_file)
-                logging.info('arquivo existe')
-                return True
-            except Exception as e:
-                logging.info('arquivo nao existe')
-                return False
-        
-        def cria_chamada(filepath):
-            try:
-                if not file_exists(filepath):
-                    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-                    with gcs.open(filepath, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                        write_to_file.write('')
-                    
-                    logging.info('Chamada criada')
-                    return True
-                else:
-                    logging.info('Chamada ja existe')
-                    with gcs.open(filepath) as opened_file:
-                        for line in opened_file:
-                            line = line.decode('utf-8')
-                            chamada.append(line.rstrip())
-                    return True          
-            except Exception as e:
-                logging.exception(e)
-                return False
-
-        def add_pessoa(pessoa):
-            
-            logging.info('Adicionando nova pessoa: ' + pessoa)
-            if len(pessoa) >= 1 and not pessoa in chamada:
-                #adiciona
-                chamada.append(pessoa)
-                try:
-                    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-                    with gcs.open(arquivo_chamada, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                        for line in chamada:
-                            write_to_file.write("%s\n" % (line.encode('utf-8')))
-
-                    with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as novo:
-                        novo.write('')
-                    
-                    return pessoa + 'adicionadx'
-
-                except Exception as e:
-                    logging.exception(e)
-                    return 'Deu um pau no seu programinha, bro'
-            else:
-                return 'Pessoa ja existe ou nome invalido'
-
-        def abre_data(pessoa):
-            retorno = []
-            with gcs.open(get_datafilename(pessoa)) as open_file:
-                for line in open_file:
-                    line = line.decode('utf-8')
-                    retorno.append(line.rstrip())
-            return retorno
-        
-        def adiciona_frase(pessoa, texto):
-            data = abre_data(pessoa)
-            data.append(texto)
-            try:
-                write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-                with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                    for line in data:
-                        write_to_file.write("%s\n" % (line.encode('utf-8')))
-                #reply('Agora eu sei falar isso seu otario')
-                return 'Agora eu sei falar isso seu otario'
-            except Exception as e:
-                logging.exception(e)
-                #reply('\n\nDeu um pau no seu programinha, bro')
-                return '\n\nDeu um pau no seu programinha, bro'
-
-        def get_frase_numero(pessoa, numero):
-            data = abre_data(pessoa)                
-            tam = len(data)
-            i = int(numero) - 1
-            if 0 <= i < tam:
-                return data[i]
-            else:
-                return 'Tente outro numero amg'
-
-        def get_frase_random(pessoa):
-            data = abre_data(pessoa)            
-            tam = len(data)
-            base = random.randint(0, tam)
-            return data[base]
-
-        def get_vomit(pessoa):
-            data = abre_data(pessoa)
-            r = map(unicode, data)
-            en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
-            vomit = '\n'.join(en_r)
-            return vomit
-
-        def get_comando(texto):
-            comando = ''
-
-            if texto == 'start':
-                comando = 'start'
-            elif texto == 'stop':
-                comando = 'stop'
-            elif texto.startswith('add_pessoa '):
-                comando = 'add_pessoa'
-            elif '_' in texto:
-                subcomando = texto.split('_', 1)[1]
-                if subcomando.startswith('add'):                 
-                    comando = 'add_frase'
-                elif subcomando.startswith('vomit'):
-                    comando = 'vomit'
-            elif ' ' in texto:
-                comando = 'get_numero'
-            elif texto == 'chamada':
-                comando = 'chamada'
-            else:
-                comando = 'random'
-            
-            return comando
-
-        def verifica_chamada():
-            #verifica a necessidade de criar uma nova chamada
-            if not cria_chamada(arquivo_chamada):
-                reply('Erro ao criar ou abrir a chamada')            
-            if len(chamada) == 0:
-                reply('Cadastrar alguem na chamada')
 
         #Envia o texto de resposta para o chat
         def reply(msg=None, img=None):
-            if msg:
-                resp = urllib2.urlopen(
-                    BASE_URL + 'sendMessage', urllib.urlencode({
-                        'chat_id': str(chat_id),
-                        'text': msg.encode('utf-8'),
-                    })
-                ).read()
-            elif img:
-                #TODO
-                logging.error('img not yet supported')
-                resp = None
-            else:
-                logging.error('no msg specified')
-                resp = None
-            
-            logging.info('send response:')
-            logging.info(resp)
+            comandos.reply(chat_id,msg,img)
         
         if text.startswith('/'):
             text = text.split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
-            command = get_comando(text.lower().split("@")[0])
-
-            verifica_chamada()
+            command = comandos.get_comando(text.lower().split("@")[0])
+            comandos.verifica_chamada()
             
             #COMANDOS
             #Liga e desliga o bot
@@ -304,25 +142,26 @@ class WebhookHandler(webapp2.RequestHandler):
             elif command == 'stop':
                 reply('Dormi')
                 setEnabled(chat_id, False)
-
+            #Adiciona nova pessoa à lista de chamada e cria arquivo data_PESSOA
             elif command == 'add_pessoa':
                 pessoa = text.split(' ', 1)[1]
-                reply(add_pessoa(pessoa))
-
+                reply(comandos.add_pessoa(pessoa))
+            #Adiciona nova frase para uma pessoa
             elif command == 'add_frase':
                 pessoa = text.split('_', 1)[0]
                 texto = text.split(' ', 1)[1]
-                reply(adiciona_frase(pessoa,texto))                
-                    
+                reply(comandos.adiciona_frase(pessoa,texto))                
+            #Envia todas as frases de uma pessoa
             elif command == 'vomit':
                 pessoa = text.split('_', 1)[0]                
-                reply(get_vomit(pessoa))
-
+                reply(comandos.get_vomit(pessoa))
+            #Envia uma frase específica
             elif command == 'get_numero':
                 pessoa, numero = text.split(' ', 1)
-                reply(get_frase_numero(pessoa, numero))
+                reply(comandos.get_frase_numero(pessoa, numero))
+            #Envia uma frase aleatória
             elif command == 'random':
-                reply(get_frase_random(text.lower().split("@")[0]))
+                reply(comandos.get_frase_random(text.lower().split("@")[0]))
             else:
                 reply('comando nao reconhecido')
 
