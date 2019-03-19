@@ -69,17 +69,17 @@ def cria_chamada(filepath):
                 write_to_file.write('')
             
             logging.info('Chamada criada')
-            return True, chamada
+            return True
         else:
             logging.info('Chamada ja existe')
             with gcs.open(filepath) as opened_file:
                 for line in opened_file:
                     line = line.decode('utf-8')
                     chamada.append(line.rstrip())
-            return True, chamada          
+            return True         
     except Exception as e:
         logging.exception(e)
-        return False, chamada
+        return False
 
 def add_pessoa(pessoa):
     chamada = abre_data('chamada')
@@ -173,12 +173,13 @@ def get_comando(texto):
     
     return comando
 
-def verifica_chamada():
+def verifica_chamada(base_url, chat_id):
     #verifica a necessidade de criar uma nova chamada
     check1 = check2 = ''
 
     if not cria_chamada(arquivo_chamada):
         check1 = 'Erro ao criar ou abrir a chamada'
+        reply(base_url, chat_id, check1)
     if len(abre_data('chamada')) == 0:
         check2 = 'Cadastrar alguem na chamada'
-    return check1, check2
+        reply(base_url, chat_id, check2)

@@ -130,8 +130,8 @@ class WebhookHandler(webapp2.RequestHandler):
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
             command = comandos.get_comando(text.lower().split("@")[0])
-            check1, check2 = comandos.verifica_chamada()
-            
+            comandos.verifica_chamada(BASE_URL,chat_id)
+
             #COMANDOS
             #Liga e desliga o bot
             if command == 'start':
