@@ -23,6 +23,8 @@ def get_bucket_name():
 
 file_path = '/' + get_bucket_name() + '/'
 arquivo_chamada = file_path + 'chamada.txt'
+chat_id = ''
+BASE_URL = ''
 
 #Envia o texto de resposta para o chat
 def reply(base_url,chat_id, msg=None, img=None):
@@ -44,12 +46,30 @@ def reply(base_url,chat_id, msg=None, img=None):
     logging.info('send response:')
     logging.info(resp)
 
+def inicializa(baseurl, chatid):
+    set_chat_id(chatid)
+    set_base_url(baseurl)
+
+def set_base_url(baseurl):
+    global BASE_URL
+    BASE_URL = baseurl
+
+def set_chat_id(chatid):
+    global chat_id
+    chat_id = str(chatid)
+    set_arquivo_chamada()
+
+def set_arquivo_chamada():
+    global arquivo_chamada
+    global chat_id
+    arquivo_chamada = file_path + chat_id + '/chamada.txt'
+
 def get_datafilename(pessoa):
             
     if pessoa == 'chamada':
         return arquivo_chamada
     else:
-        return file_path + 'data_' + pessoa + '.txt'
+        return file_path + chat_id + '/data_' + pessoa + '.txt'
 
 def file_exists(gcs_file):
     try:
@@ -67,7 +87,9 @@ def cria_arquivo(filepath, content=None):
             content = ''
         write_to_file.write(content)
 
-def cria_chamada(filepath):
+def cria_chamada(chat_id=None):
+    
+    filepath = arquivo_chamada
     chamada = []
     try:
         if not file_exists(filepath):
@@ -76,6 +98,7 @@ def cria_chamada(filepath):
                 write_to_file.write('')
             
             logging.info('Chamada criada')
+            reply(BASE_URL, chat_id,'Chamada criada')
             return True
         else:
             logging.info('Chamada ja existe')
@@ -132,11 +155,13 @@ def abre_data(pessoa):
 
 def add_frase(text):
     pessoa = text.split('_', 1)[0]
-    texto = text.split(' ', 1)[1]
-    
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
-
+    
+    if not ' ' in text:
+        return 'Escreva uma frase poxa'
+    texto = text.split(' ', 1)[1]
+    
     data = abre_data(pessoa)
     data.append(texto)
     try:
@@ -242,7 +267,7 @@ def verifica_chamada(base_url=None, chat_id=None):
     #verifica a necessidade de criar uma nova chamada
     check1 = check2 = ''
 
-    if not cria_chamada(arquivo_chamada):
+    if not cria_chamada(chat_id):
         check1 = 'Erro ao criar ou abrir a chamada'
         if chat_id == None:
             return check1

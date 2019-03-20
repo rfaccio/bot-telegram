@@ -103,10 +103,16 @@ class WebhookHandler(webapp2.RequestHandler):
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
-        message = body['message']
-        text = message.get('text')
-        chat = message['chat']
-        chat_id = chat['id']
+        
+        try:
+            message = body['message']
+            text = message.get('text')
+            chat = message['chat']
+            chat_id = chat['id']
+        except KeyError as e:
+            logging.error(e)
+            logging.error('erro na chave da mensagem')
+            return
 
         if not text:
             logging.info('no text')
@@ -121,6 +127,7 @@ class WebhookHandler(webapp2.RequestHandler):
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
             command = comandos.get_comando(text.lower().split("@")[0])
+            comandos.inicializa(BASE_URL, chat_id)
             #verifica a necessidade de criar nova chamada
             comandos.verifica_chamada(BASE_URL,chat_id)
 
