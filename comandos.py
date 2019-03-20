@@ -106,7 +106,7 @@ def file_exists(gcs_file):
         logging.info('arquivo nao existe')
         return False
 
-def cria_arquivo(filepath, content=None):
+def write_file(filepath, content=None):
     write_retry_params = gcs.RetryParams(backoff_factor=1.1)
     with gcs.open(filepath, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
         if content == None:
@@ -122,19 +122,14 @@ def cria_chamada(chat_id=None):
     chamada = []
     try:
         if not file_exists(filepath):
-            write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-            with gcs.open(filepath, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                write_to_file.write('')
-            
+            write_file(filepath)
+
             logging.info('Chamada criada')
             reply(BASE_URL, chat_id,'Chamada criada')
             return True
         else:
             logging.info('Chamada ja existe')
-            with gcs.open(filepath) as opened_file:
-                for line in opened_file:
-                    line = line.decode('utf-8')
-                    chamada.append(line.rstrip())
+            chamada = abre_data('chamada')
             return True         
     except Exception as e:
         logging.exception(e)
@@ -158,14 +153,10 @@ def add_pessoa(text):
         #adiciona
         chamada.append(pessoa)
         try:
-            write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-            with gcs.open(arquivo_chamada, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                for line in chamada:
-                    write_to_file.write("%s\n" % (line.encode('utf-8')))
-
-            with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as novo:
-                novo.write('')
-            
+            #adiciona na chamada
+            write_file(arquivo_chamada,chamada)           
+            #cria arquivo de frases vazio
+            write_file(get_datafilename(pessoa))   
             return pessoa + ' adicionadx com sucesso!'
 
         except Exception as e:
@@ -197,11 +188,8 @@ def add_frase(text):
     else:    
         data.append(texto)
         try:
-            write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-            with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-                for line in data:
-                    write_to_file.write("%s\n" % (line.encode('utf-8')))
-            #reply('Agora eu sei falar isso seu otario')
+            write_file(get_datafilename(pessoa),data)
+            
             return 'Agora eu sei falar isso seu otario'
         except Exception as e:
             logging.exception(e)
@@ -348,7 +336,7 @@ def del_frase(text):
     if 0 <= i < tam:
         deletada = data.pop(i)
         try:
-            cria_arquivo(get_datafilename(pessoa),data)
+            write_file(get_datafilename(pessoa),data)
             return '[' + deletada + ']' + ' excluida'
         except Exception as e:
             logging.exception(e)
@@ -375,7 +363,6 @@ def extrai_reply(message):
             reply_msg_txt = reply_to_message['text']
             logging.info('encontrou reply_to_message: ' + reply_msg_txt)
             if 'sticker' in message:
-                add_sticker = True
                 sticker = message['sticker']
                 sticker_id = sticker['file_id']
                 logging.info('encontrou sticker: ' + sticker_id)
