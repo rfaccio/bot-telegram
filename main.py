@@ -110,7 +110,8 @@ class WebhookHandler(webapp2.RequestHandler):
         message = body['message']
 
         text, chat_id = comandos.extrai_texto(message)
-        text, reply_msg_txt, sticker_id = comandos.extrai_reply(message)
+        if not text:
+            text, reply_msg_txt, sticker_id = comandos.extrai_reply(message)
 
         #inicializa algumas variáveis globais
         comandos.inicializa(BASE_URL, chat_id)

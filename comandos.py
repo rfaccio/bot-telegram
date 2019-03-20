@@ -111,7 +111,10 @@ def cria_arquivo(filepath, content=None):
     with gcs.open(filepath, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
         if content == None:
             content = ''
-        write_to_file.write(content)
+            write_to_file.write(content)
+        else:
+            for line in content:
+                write_to_file.write("%s\n" % (line.encode('utf-8')))
 
 def cria_chamada(chat_id=None):
     
@@ -344,7 +347,12 @@ def del_frase(text):
     i = int(numero) - 1
     if 0 <= i < tam:
         deletada = data.pop(i)
-        return '[' + deletada + ']' + ' excluida'
+        try:
+            cria_arquivo(get_datafilename(pessoa),data)
+            return '[' + deletada + ']' + ' excluida'
+        except Exception as e:
+            logging.exception(e)
+            return '\n\nDeu um pau no seu programinha, bro'        
     else:
         return 'Tente outro numero amg'
 
