@@ -60,6 +60,13 @@ def file_exists(gcs_file):
         logging.info('arquivo nao existe')
         return False
 
+def cria_arquivo(filepath, content=None):
+    write_retry_params = gcs.RetryParams(backoff_factor=1.1)
+    with gcs.open(filepath, 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
+        if content == None:
+            content = ''
+        write_to_file.write(content)
+
 def cria_chamada(filepath):
     chamada = []
     try:
@@ -81,10 +88,21 @@ def cria_chamada(filepath):
         logging.exception(e)
         return False
 
-def add_pessoa(pessoa):
+def verifica_pessoa(pessoa):
+    chamada = abre_data('chamada')
+    if pessoa in chamada:
+        return True
+    elif pessoa == 'chamada':
+        return True
+    else:
+        return False
+
+def add_pessoa(text):
+    pessoa = text.split(' ', 1)[1]
+
     chamada = abre_data('chamada')
     logging.info('Adicionando nova pessoa: ' + pessoa)
-    if len(pessoa) >= 1 and not pessoa in chamada:
+    if len(pessoa) >= 1 and not verifica_pessoa(pessoa):
         #adiciona
         chamada.append(pessoa)
         try:
@@ -112,7 +130,13 @@ def abre_data(pessoa):
             retorno.append(line.rstrip())
     return retorno
 
-def adiciona_frase(pessoa, texto):
+def add_frase(text):
+    pessoa = text.split('_', 1)[0]
+    texto = text.split(' ', 1)[1]
+    
+    if not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+
     data = abre_data(pessoa)
     data.append(texto)
     try:
@@ -127,7 +151,11 @@ def adiciona_frase(pessoa, texto):
         #reply('\n\nDeu um pau no seu programinha, bro')
         return '\n\nDeu um pau no seu programinha, bro'
 
-def get_frase_numero(pessoa, numero):
+def get_frase_numero(text):
+    pessoa, numero = text.split(' ', 1)
+    if not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+
     data = abre_data(pessoa)                
     tam = len(data)
     i = int(numero) - 1
@@ -136,18 +164,53 @@ def get_frase_numero(pessoa, numero):
     else:
         return 'Tente outro numero amg'
 
-def get_frase_random(pessoa):
+def get_frase_random(text):
+    pessoa = text.lower().split("@")[0]
+    if not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+
     data = abre_data(pessoa)            
     tam = len(data)
     base = random.randint(0, tam)
     return data[base]
 
-def get_vomit(pessoa):
+def get_vomit(text):
+    if '_' in text:
+        pessoa = text.split('_', 1)[0]
+    else:
+        pessoa = text
+
+    if not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+
     data = abre_data(pessoa)
     r = map(unicode, data)
     en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
     vomit = '\n'.join(en_r)
     return vomit
+
+def get_hype(text):
+    chamada = abre_data('chamada')
+
+    if ' ' in text:
+        pessoa = text.split(' ', 1)[1]
+    else:
+        pessoa = 'random'
+
+    if pessoa == 'random':       
+        tam_chamada = len(chamada)
+        rand_chamada = random.randint(0, tam_chamada)
+        pessoa = chamada[rand_chamada]
+    elif not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+
+    data = abre_data(pessoa)
+    tam_frases = len(data)
+    rand_frase = random.randint(0, tam_frases)
+    frase = data[rand_frase]
+
+    frase_hype = ' '.join(list(frase))
+    return frase_hype
 
 def get_comando(texto):
     comando = ''
@@ -164,8 +227,10 @@ def get_comando(texto):
             comando = 'add_frase'
         elif subcomando.startswith('vomit'):
             comando = 'vomit'
+    elif texto.startswith('hype'):
+        comando = 'hype'
     elif ' ' in texto:
-        comando = 'get_numero'
+        comando = 'get_frase_numero'    
     elif texto == 'chamada':
         comando = 'chamada'
     else:
@@ -173,13 +238,21 @@ def get_comando(texto):
     
     return comando
 
-def verifica_chamada(base_url, chat_id):
+def verifica_chamada(base_url=None, chat_id=None):
     #verifica a necessidade de criar uma nova chamada
     check1 = check2 = ''
 
     if not cria_chamada(arquivo_chamada):
         check1 = 'Erro ao criar ou abrir a chamada'
-        reply(base_url, chat_id, check1)
+        if chat_id == None:
+            return check1
+        else:
+            reply(base_url, chat_id, check1)
     if len(abre_data('chamada')) == 0:
         check2 = 'Cadastrar alguem na chamada'
-        reply(base_url, chat_id, check2)
+        if chat_id == None:
+            return check2
+        else:
+            reply(base_url, chat_id, check2)
+    else:
+        return get_vomit('chamada')

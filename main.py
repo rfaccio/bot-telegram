@@ -70,17 +70,8 @@ class SetBucket(webapp2.RequestHandler):
             self.response.write('\n\nThere was an error running the demo! '
                                 'Please check the logs for more details.\n')
         
-        def read_file(self, filename):
-
-            lista = []
-
-            with gcs.open(filename) as gcs_file:
-                for line in gcs_file:
-                    lista.append(line.rstrip())
-            
-            r = map(str, lista)
-            vomit = '\n'.join(r)
-            self.response.write(vomit)
+        def read_file(self, filename):            
+            self.response.write(comandos.verifica_chamada())
 
 class MeHandler(webapp2.RequestHandler):
     def get(self):
@@ -130,6 +121,7 @@ class WebhookHandler(webapp2.RequestHandler):
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
             command = comandos.get_comando(text.lower().split("@")[0])
+            #verifica a necessidade de criar nova chamada
             comandos.verifica_chamada(BASE_URL,chat_id)
 
             #COMANDOS
@@ -141,25 +133,22 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Dormi')
                 setEnabled(chat_id, False)
             #Adiciona nova pessoa à lista de chamada e cria arquivo data_PESSOA
-            elif command == 'add_pessoa':
-                pessoa = text.split(' ', 1)[1]
-                reply(comandos.add_pessoa(pessoa))
+            elif command == 'add_pessoa':                
+                reply(comandos.add_pessoa(text))
             #Adiciona nova frase para uma pessoa
-            elif command == 'add_frase':
-                pessoa = text.split('_', 1)[0]
-                texto = text.split(' ', 1)[1]
-                reply(comandos.adiciona_frase(pessoa,texto))                
+            elif command == 'add_frase':                
+                reply(comandos.add_frase(text))                
             #Envia todas as frases de uma pessoa
-            elif command == 'vomit':
-                pessoa = text.split('_', 1)[0]                
-                reply(comandos.get_vomit(pessoa))
+            elif command == 'vomit':                              
+                reply(comandos.get_vomit(text))
             #Envia uma frase específica
-            elif command == 'get_numero':
-                pessoa, numero = text.split(' ', 1)
-                reply(comandos.get_frase_numero(pessoa, numero))
+            elif command == 'get_frase_numero':                
+                reply(comandos.get_frase_numero(text))
             #Envia uma frase aleatória
             elif command == 'random':
-                reply(comandos.get_frase_random(text.lower().split("@")[0]))
+                reply(comandos.get_frase_random(text))
+            elif command == 'hype':                               
+                reply(comandos.get_hype(text))
             #Envia a lista de chamada
             elif command == 'chamada':
                 reply(comandos.get_vomit('chamada'))
