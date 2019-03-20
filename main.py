@@ -1,6 +1,5 @@
 # This Python file uses the following encoding: utf-8
 
-
 import StringIO
 import json
 import logging
@@ -22,6 +21,7 @@ import cloudstorage as gcs
 from google.appengine.api import app_identity
 
 import config
+import comandos
 
 my_default_retry_params = gcs.RetryParams(initial_delay=0.2,
                                           max_delay=5.0,
@@ -31,9 +31,7 @@ gcs.set_default_retry_params(my_default_retry_params)
 
 #token definido em arquivo config.py
 TOKEN = config.TOKEN
-
-#
-BASE_URL = BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
+BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 class EnableStatus(ndb.Model):
     # key name: str(chat_id)
@@ -72,17 +70,8 @@ class SetBucket(webapp2.RequestHandler):
             self.response.write('\n\nThere was an error running the demo! '
                                 'Please check the logs for more details.\n')
         
-        def read_file(self, filename):
-
-            lista = []
-
-            with gcs.open(filename) as gcs_file:
-                for line in gcs_file:
-                    lista.append(line.rstrip())
-            
-            r = map(str, lista)
-            vomit = '\n'.join(r)
-            self.response.write(vomit)
+        def read_file(self, filename):            
+            self.response.write(comandos.verifica_chamada())
 
 class MeHandler(webapp2.RequestHandler):
     def get(self):
@@ -114,6 +103,7 @@ class WebhookHandler(webapp2.RequestHandler):
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
+<<<<<<< HEAD
         bucket_name = os.environ.get('BUCKET_NAME',
                                     app_identity.get_default_gcs_bucket_name())
         update_id = body['update_id']
@@ -127,10 +117,23 @@ class WebhookHandler(webapp2.RequestHandler):
         chamada = []
         file_path = '/' + bucket_name + '/'        
         arquivo_chamada = file_path + 'chamada.txt'  
+=======
+        
+        try:
+            message = body['message']
+            text = message.get('text')
+            chat = message['chat']
+            chat_id = chat['id']
+        except KeyError as e:
+            logging.error(e)
+            logging.error('erro na chave da mensagem')
+            return
+>>>>>>> new-features
 
         if not text:
             logging.info('no text')
             return
+<<<<<<< HEAD
         
         def get_datafilename(pessoa):
             
@@ -266,35 +269,22 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Erro ao criar ou abrir a chamada')            
             if len(chamada) == 0:
                 reply('Cadastrar alguem na chamada')
+=======
+>>>>>>> new-features
 
         #Envia o texto de resposta para o chat
         def reply(msg=None, img=None):
-            if msg:
-                resp = urllib2.urlopen(
-                    BASE_URL + 'sendMessage', urllib.urlencode({
-                        'chat_id': str(chat_id),
-                        'text': msg.encode('utf-8'),
-                    })
-                ).read()
-            elif img:
-                #TODO
-                logging.error('img not yet supported')
-                resp = None
-            else:
-                logging.error('no msg specified')
-                resp = None
-            
-            logging.info('send response:')
-            logging.info(resp)
+            comandos.reply(BASE_URL,chat_id,msg,img)
         
         if text.startswith('/'):
             text = text.split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
-            command = get_comando(text.lower().split("@")[0])
+            command = comandos.get_comando(text.lower().split("@")[0])
+            comandos.inicializa(BASE_URL, chat_id)
+            #verifica a necessidade de criar nova chamada
+            comandos.verifica_chamada(BASE_URL,chat_id)
 
-            verifica_chamada()
-            
             #COMANDOS
             #Liga e desliga o bot
             if command == 'start':
@@ -303,6 +293,7 @@ class WebhookHandler(webapp2.RequestHandler):
             elif command == 'stop':
                 reply('Dormi')
                 setEnabled(chat_id, False)
+<<<<<<< HEAD
             elif command == 'add_pessoa':
                 pessoa = text.split(' ', 1)[1]
                 reply(add_pessoa(pessoa))
@@ -320,6 +311,28 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply(get_frase_random(text.lower().split("@")[0]))
             elif command == 'chamada':
                 reply(get_vomit('chamada'))
+=======
+            #Adiciona nova pessoa à lista de chamada e cria arquivo data_PESSOA
+            elif command == 'add_pessoa':                
+                reply(comandos.add_pessoa(text))
+            #Adiciona nova frase para uma pessoa
+            elif command == 'add_frase':                
+                reply(comandos.add_frase(text))                
+            #Envia todas as frases de uma pessoa
+            elif command == 'vomit':                              
+                reply(comandos.get_vomit(text))
+            #Envia uma frase específica
+            elif command == 'get_frase_numero':                
+                reply(comandos.get_frase_numero(text))
+            #Envia uma frase aleatória
+            elif command == 'random':
+                reply(comandos.get_frase_random(text))
+            elif command == 'hype':                               
+                reply(comandos.get_hype(text))
+            #Envia a lista de chamada
+            elif command == 'chamada':
+                reply(comandos.get_vomit('chamada'))
+>>>>>>> new-features
             else:
                 reply('comando nao reconhecido')
 
