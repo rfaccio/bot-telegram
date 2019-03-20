@@ -111,7 +111,7 @@ class WebhookHandler(webapp2.RequestHandler):
 
         text, chat_id = comandos.extrai_texto(message)
         if not text:
-            text, reply_msg_txt, sticker_id = comandos.extrai_reply(message)
+            text, reply_msg_txt, sticker_id, emoji = comandos.extrai_reply(message)
 
         #inicializa algumas variáveis globais
         comandos.inicializa(BASE_URL, chat_id)
@@ -146,7 +146,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply(comandos.del_frase(text))
             #Adiciona o sticker enviado como repsta ao "add_frase sticker"
             elif command == 'add_sticker':
-                reply(comandos.add_sticker(sticker_id,reply_msg_txt))              
+                reply(comandos.add_sticker(sticker_id,reply_msg_txt,emoji))              
             #Envia todas as frases de uma pessoa
             elif command == 'vomit':                              
                 reply(comandos.get_vomit(text))

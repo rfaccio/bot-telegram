@@ -30,8 +30,9 @@ BASE_URL = ''
 def reply(base_url,chat_id, msg=None, img=None):    
     if msg:
         if msg.startswith('sti'):
+            msg = msg.split('=', 1)[0]
             sti = msg.split(':', 1)[1]
-
+            
             resp = urllib2.urlopen(
                 BASE_URL + 'sendSticker', urllib.urlencode({
                             'chat_id': str(chat_id),
@@ -119,7 +120,6 @@ def write_file(filepath, content=None):
 def cria_chamada(chat_id=None):
     
     filepath = arquivo_chamada
-    chamada = []
     try:
         if not file_exists(filepath):
             write_file(filepath)
@@ -129,7 +129,6 @@ def cria_chamada(chat_id=None):
             return True
         else:
             logging.info('Chamada ja existe')
-            chamada = abre_data('chamada')
             return True         
     except Exception as e:
         logging.exception(e)
@@ -200,13 +199,13 @@ def add_sticker_reply(text):
     txt = '' + text + ' = ' + 'Responda essa msg com o sticker'
     reply_forced(BASE_URL,chat_id,txt)
 
-def add_sticker(sticker,text):
-    sticker_id = sticker
+def add_sticker(sticker_id,text,emoji):
     if '_' in text:
         pessoa = text.split('_', 1)[0]
     else:
         pessoa = 'erro'
-    txt = pessoa + '_add sti:' + sticker_id
+    
+    txt = pessoa + '_add sti:' + sticker_id + '=' + emoji
     return add_frase(txt)
 
 def get_frase_numero(text):
@@ -242,8 +241,15 @@ def get_vomit(text):
         return 'Pessoa nao existe'
 
     data = abre_data(pessoa)
-    r = map(unicode, data)
-    
+    aux = map(unicode, data)
+
+    r = []
+    for line in aux:
+        if line.startswith('sti') and '=' in line:
+            sticker, emoji = line.split('=', 1)
+            line = 'sticker ' + emoji + ' (' + sticker + ')'
+        r.append(line)
+
     en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
     vomit = '\n'.join(en_r)
     return vomit
@@ -338,7 +344,7 @@ def del_frase(text):
         deletada = data.pop(i)
         try:
             write_file(get_datafilename(pessoa),data)
-            return '[' + deletada + ']' + ' excluida'
+            return '[' + deletada + ']' + ' excluida' + '\n\n' + get_vomit(pessoa)
         except Exception as e:
             logging.exception(e)
             return '\n\nDeu um pau no seu programinha, bro'        
@@ -366,8 +372,9 @@ def extrai_reply(message):
             if 'sticker' in message:
                 sticker = message['sticker']
                 sticker_id = sticker['file_id']
+                emoji = sticker['emoji']
                 logging.info('encontrou sticker: ' + sticker_id)
-        return '/add_sticker', reply_msg_txt, sticker_id
+        return '/add_sticker', reply_msg_txt, sticker_id, emoji
         # if '_' in reply_msg_txt:
         #     pessoa = reply_msg_txt.split('_', 1)[0]
         # return '/add_sticker ' + reply_msg_txt + sticker_id
