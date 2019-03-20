@@ -55,6 +55,4 @@ docs/_build/
 
 # PyBuilder
 target/
-config.py
-chamada.py
 *.vscode

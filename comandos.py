@@ -27,18 +27,44 @@ chat_id = ''
 BASE_URL = ''
 
 #Envia o texto de resposta para o chat
-def reply(base_url,chat_id, msg=None, img=None):
+def reply(base_url,chat_id, msg=None, img=None):    
+    if msg:
+        if msg.startswith('sti'):
+            sti = msg.split(':', 1)[1]
+
+            resp = urllib2.urlopen(
+                BASE_URL + 'sendSticker', urllib.urlencode({
+                            'chat_id': str(chat_id),
+                            'sticker': sti.encode('utf-8'),
+                            ##'reply_to_message_id': str(message_id),
+            })).read()
+        else:
+            resp = urllib2.urlopen(
+                base_url + 'sendMessage', urllib.urlencode({
+                    'chat_id': str(chat_id),
+                    'text': msg.encode('utf-8'),
+                })
+            ).read()
+    elif img:
+        #TODO
+        logging.error('img not yet supported')
+        resp = None    
+    else:
+        logging.error('no msg specified')
+        resp = None
+    
+    logging.info('send response:')
+    logging.info(resp)
+
+def reply_forced(base_url,chat_id, msg=None):
     if msg:
         resp = urllib2.urlopen(
             base_url + 'sendMessage', urllib.urlencode({
                 'chat_id': str(chat_id),
                 'text': msg.encode('utf-8'),
+                'reply_markup': json.dumps({'force_reply': True, 'selective': True}),
             })
         ).read()
-    elif img:
-        #TODO
-        logging.error('img not yet supported')
-        resp = None
     else:
         logging.error('no msg specified')
         resp = None
@@ -157,24 +183,40 @@ def add_frase(text):
     pessoa = text.split('_', 1)[0]
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
-    
+    data = abre_data(pessoa)
+
     if not ' ' in text:
         return 'Escreva uma frase poxa'
     texto = text.split(' ', 1)[1]
-    
-    data = abre_data(pessoa)
-    data.append(texto)
-    try:
-        write_retry_params = gcs.RetryParams(backoff_factor=1.1)
-        with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
-            for line in data:
-                write_to_file.write("%s\n" % (line.encode('utf-8')))
-        #reply('Agora eu sei falar isso seu otario')
-        return 'Agora eu sei falar isso seu otario'
-    except Exception as e:
-        logging.exception(e)
-        #reply('\n\nDeu um pau no seu programinha, bro')
-        return '\n\nDeu um pau no seu programinha, bro'
+
+    if texto == 'sticker':
+        add_sticker_reply(text)
+    else:    
+        data.append(texto)
+        try:
+            write_retry_params = gcs.RetryParams(backoff_factor=1.1)
+            with gcs.open(get_datafilename(pessoa), 'w', content_type='text/plain', retry_params=write_retry_params) as write_to_file:
+                for line in data:
+                    write_to_file.write("%s\n" % (line.encode('utf-8')))
+            #reply('Agora eu sei falar isso seu otario')
+            return 'Agora eu sei falar isso seu otario'
+        except Exception as e:
+            logging.exception(e)
+            #reply('\n\nDeu um pau no seu programinha, bro')
+            return '\n\nDeu um pau no seu programinha, bro'
+
+def add_sticker_reply(text):
+    txt = '' + text + ' = ' + 'Responda essa msg com o sticker'
+    reply_forced(BASE_URL,chat_id,txt)
+
+def add_sticker(sticker,text):
+    sticker_id = sticker
+    if '_' in text:
+        pessoa = text.split('_', 1)[0]
+    else:
+        pessoa = 'erro'
+    txt = pessoa + '_add sti:' + sticker_id
+    return add_frase(txt)
 
 def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
@@ -196,7 +238,7 @@ def get_frase_random(text):
 
     data = abre_data(pessoa)            
     tam = len(data)
-    base = random.randint(0, tam)
+    base = random.randint(0, tam - 1)
     return data[base]
 
 def get_vomit(text):
@@ -246,12 +288,16 @@ def get_comando(texto):
         comando = 'stop'
     elif texto.startswith('add_pessoa '):
         comando = 'add_pessoa'
+    elif texto == 'add_sticker':
+        comando = 'add_sticker'
     elif '_' in texto:
         subcomando = texto.split('_', 1)[1]
         if subcomando.startswith('add'):                 
             comando = 'add_frase'
         elif subcomando.startswith('vomit'):
             comando = 'vomit'
+        elif subcomando.startswith('del'):
+            comando = 'del_frase'
     elif texto.startswith('hype'):
         comando = 'hype'
     elif ' ' in texto:
@@ -281,3 +327,54 @@ def verifica_chamada(base_url=None, chat_id=None):
             reply(base_url, chat_id, check2)
     else:
         return get_vomit('chamada')
+
+def del_frase(text):
+    # Ex: "pessoa_del 9"    
+    pessoa = text.split('_', 1)[0]
+    if not verifica_pessoa(pessoa):
+        return 'Pessoa nao existe'
+    data = abre_data(pessoa)
+
+    if not ' ' in text:
+        return 'Escolha um numero poxa vida'
+    numero = text.split(' ', 1)[1]
+
+    data = abre_data(pessoa)                
+    tam = len(data)
+    i = int(numero) - 1
+    if 0 <= i < tam:
+        deletada = data.pop(i)
+        return '[' + deletada + ']' + ' excluida'
+    else:
+        return 'Tente outro numero amg'
+
+def extrai_texto(message):
+    try:        
+        text = message.get('text')
+        user = message['from']
+        user_id = user['id']
+        chat = message['chat']
+        chat_id = chat['id']
+    except KeyError as e:
+        logging.error(e)
+        logging.error('erro na chave da mensagem')
+    return text, chat_id
+
+def extrai_reply(message):
+    try:
+        if 'reply_to_message' in message:
+            reply_to_message = message.get('reply_to_message')
+            reply_msg_txt = reply_to_message['text']
+            logging.info('encontrou reply_to_message: ' + reply_msg_txt)
+            if 'sticker' in message:
+                add_sticker = True
+                sticker = message['sticker']
+                sticker_id = sticker['file_id']
+                logging.info('encontrou sticker: ' + sticker_id)
+        return '/add_sticker', reply_msg_txt, sticker_id
+        # if '_' in reply_msg_txt:
+        #     pessoa = reply_msg_txt.split('_', 1)[0]
+        # return '/add_sticker ' + reply_msg_txt + sticker_id
+    except Exception as e:
+        logging.info('not reply')
+        return '','false', 'false'

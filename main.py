@@ -30,7 +30,7 @@ my_default_retry_params = gcs.RetryParams(initial_delay=0.2,
 gcs.set_default_retry_params(my_default_retry_params)
 
 #token definido em arquivo config.py
-TOKEN = config.TOKEN
+TOKEN = config.Settings.get('TELEGRAM_TOKEN')
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 class EnableStatus(ndb.Model):
@@ -98,38 +98,34 @@ class SetWebhookHandler(webapp2.RequestHandler):
 
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
+        #Envia o texto de resposta para o chat
+        def reply(msg=None, img=None):
+            comandos.reply(BASE_URL,chat_id,msg,img)
+
         urlfetch.set_default_fetch_deadline(60)
         body = json.loads(self.request.body)
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
-        
-        try:
-            message = body['message']
-            text = message.get('text')
-            chat = message['chat']
-            chat_id = chat['id']
-        except KeyError as e:
-            logging.error(e)
-            logging.error('erro na chave da mensagem')
-            return
+        message = body['message']
+
+        text, chat_id = comandos.extrai_texto(message)
+        text, reply_msg_txt, sticker_id = comandos.extrai_reply(message)
+
+        #inicializa algumas variáveis globais
+        comandos.inicializa(BASE_URL, chat_id)
+        #verifica a necessidade de criar nova chamada
+        comandos.verifica_chamada(BASE_URL,chat_id)
 
         if not text:
             logging.info('no text')
             return
 
-        #Envia o texto de resposta para o chat
-        def reply(msg=None, img=None):
-            comandos.reply(BASE_URL,chat_id,msg,img)
-        
         if text.startswith('/'):
             text = text.split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
-            command = comandos.get_comando(text.lower().split("@")[0])
-            comandos.inicializa(BASE_URL, chat_id)
-            #verifica a necessidade de criar nova chamada
-            comandos.verifica_chamada(BASE_URL,chat_id)
+            command = comandos.get_comando(text.lower().split("@")[0])          
 
             #COMANDOS
             #Liga e desliga o bot
@@ -144,7 +140,12 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply(comandos.add_pessoa(text))
             #Adiciona nova frase para uma pessoa
             elif command == 'add_frase':                
-                reply(comandos.add_frase(text))                
+                reply(comandos.add_frase(text))
+            elif command == 'del_frase':
+                reply(comandos.del_frase(text))
+            #Adiciona o sticker enviado como repsta ao "add_frase sticker"
+            elif command == 'add_sticker':
+                reply(comandos.add_sticker(sticker_id,reply_msg_txt))              
             #Envia todas as frases de uma pessoa
             elif command == 'vomit':                              
                 reply(comandos.get_vomit(text))
