@@ -50,7 +50,7 @@ def reply(base_url,chat_id, msg=None, img=None):
         logging.error('img not yet supported')
         resp = None    
     else:
-        logging.error('no msg specified')
+        logging.info('no msg specified')
         resp = None
     
     logging.info('send response:')
@@ -243,6 +243,7 @@ def get_vomit(text):
 
     data = abre_data(pessoa)
     r = map(unicode, data)
+    
     en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
     vomit = '\n'.join(en_r)
     return vomit
