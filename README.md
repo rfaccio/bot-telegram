@@ -2,7 +2,7 @@
 
 ## Instalando:
 
-1. Criar projeto no Google Cloud (cloud.google.com)
+1. Criar projeto no [Google Cloud Console](console.cloud.google.com)
 2. Criar o app no App Engine
 3. Criar um bot através do BotFather no Telegram e copiar seu Token
 4. Realizar o deploy usando o Google App Engine
