@@ -27,7 +27,8 @@ chat_id = ''
 BASE_URL = ''
 
 #Envia o texto de resposta para o chat
-def reply(base_url,chat_id, msg=None, img=None):    
+def reply(base_url, msg=None, img=None):
+    global chat_id
     if msg:
         if msg.startswith('sti'):
             msg = msg.split('=', 1)[0]
@@ -56,7 +57,8 @@ def reply(base_url,chat_id, msg=None, img=None):
     
     logging.info('send response:')
     logging.info(resp)
-    logging.info('msg: ' + msg)
+    if msg:
+        logging.info('msg: ' + msg)
 
 def reply_forced(base_url,chat_id, msg=None):
     if msg:
@@ -173,7 +175,8 @@ def abre_data(pessoa):
             retorno.append(line.rstrip())
     return retorno
 
-def add_frase(text):
+def add_frase(**msg):
+    text = msg['text']
     pessoa = text.split('_', 1)[0]
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
@@ -184,7 +187,7 @@ def add_frase(text):
     texto = text.split(' ', 1)[1]
 
     if texto == 'sticker':
-        add_sticker_reply(text)
+        add_sticker_reply(text, msg['user_id'])
     else:    
         data.append(texto)
         try:
@@ -196,25 +199,28 @@ def add_frase(text):
             #reply('\n\nDeu um pau no seu programinha, bro')
             return '\n\nDeu um pau no seu programinha, bro'
 
-def add_sticker_reply(text):
+def add_sticker_reply(text, user_id):
     txt = '' + text + ' = ' + 'Responda essa msg com o sticker'
-    reply_forced(BASE_URL,chat_id,txt)
+    reply_forced(BASE_URL,user_id,txt)
 
-def add_sticker(sticker_id,text,emoji):
+def add_sticker(**msg):
+    sticker_id = msg['sticker_id']
+    text       = msg['reply_msg_txt']
+    emoji      = msg['emoji']
     if '_' in text:
         pessoa = text.split('_', 1)[0]
     else:
         pessoa = 'erro'
-    
-    txt = pessoa + '_add sti:' + sticker_id + '=' + emoji
-    return add_frase(txt)
+
+    msg['text'] = pessoa + '_add sti:' + sticker_id + '=' + emoji
+    return add_frase(**msg)
 
 def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
 
-    data = abre_data(pessoa)                
+    data = abre_data(pessoa)
     tam = len(data)
     i = int(numero) - 1
     if 0 <= i < tam:
@@ -362,7 +368,7 @@ def extrai_texto(message):
     except KeyError as e:
         logging.error(e)
         logging.error('erro na chave da mensagem')
-    return text, chat_id
+    return text, chat_id, user_id
 
 def extrai_reply(message):
     comando       = ''

@@ -99,8 +99,8 @@ class SetWebhookHandler(webapp2.RequestHandler):
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
         #Envia o texto de resposta para o chat
-        def reply(msg=None, img=None):
-            comandos.reply(BASE_URL,chat_id,msg,img)
+        def reply(message=None, img=None):
+            comandos.reply(BASE_URL,message,img)
 
         urlfetch.set_default_fetch_deadline(60)
         body = json.loads(self.request.body)
@@ -108,57 +108,59 @@ class WebhookHandler(webapp2.RequestHandler):
         logging.info(body)
         self.response.write(json.dumps(body))
         message = body['message']
-
-        text, chat_id = comandos.extrai_texto(message)
-        if not text:
-            text, reply_msg_txt, sticker_id, emoji = comandos.extrai_reply(message)
+        msg = {}
+        # msg = {'text': '', 'chat_id': '', 'user_id': '', 'reply_msg_txt': '', 'sticker_id': '', 'emoji': ''}
+        msg['text'], msg['chat_id'], msg['user_id'] = comandos.extrai_texto(message)
+        #text, chat_id, user_id = comandos.extrai_texto(message)
+        if not msg['text']:
+            msg['text'], msg['reply_msg_txt'], msg['sticker_id'], msg['emoji'] = comandos.extrai_reply(message)
 
         #inicializa algumas variáveis globais
-        comandos.inicializa(BASE_URL, chat_id)
+        comandos.inicializa(BASE_URL,msg['chat_id'])
         #verifica a necessidade de criar nova chamada
-        comandos.verifica_chamada(BASE_URL,chat_id)
+        comandos.verifica_chamada(BASE_URL,msg['chat_id'])
 
-        if not text:
+        if not msg['text']:
             logging.info('no text')
             return
 
-        logging.info('text is: ' + text)
-        if text.startswith('/'):
-            text = text.split('/')[1]
+        logging.info('text is: ' + msg['text'])
+        if msg['text'].startswith('/'):
+            msg['text'] = msg['text'].split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
-            command = comandos.get_comando(text.lower().split("@")[0])          
+            command = comandos.get_comando(msg['text'].lower().split("@")[0])
 
             #COMANDOS
             #Liga e desliga o bot
             if command == 'start':
                 reply('Acordei')
-                setEnabled(chat_id, True)
+                setEnabled(msg['chat_id'], True)
             elif command == 'stop':
                 reply('Dormi')
-                setEnabled(chat_id, False)
+                setEnabled(msg['chat_id'], False)
             #Adiciona nova pessoa à lista de chamada e cria arquivo data_PESSOA
-            elif command == 'add_pessoa':                
-                reply(comandos.add_pessoa(text))
+            elif command == 'add_pessoa':
+                reply(comandos.add_pessoa(msg['text']))
             #Adiciona nova frase para uma pessoa
-            elif command == 'add_frase':                
-                reply(comandos.add_frase(text))
+            elif command == 'add_frase':
+                reply(comandos.add_frase(**msg))
             elif command == 'del_frase':
-                reply(comandos.del_frase(text))
+                reply(comandos.del_frase(msg['text']))
             #Adiciona o sticker enviado como repsta ao "add_frase sticker"
             elif command == 'add_sticker':
-                reply(comandos.add_sticker(sticker_id,reply_msg_txt,emoji))              
+                reply(comandos.add_sticker(**msg))
             #Envia todas as frases de uma pessoa
-            elif command == 'vomit':                              
-                reply(comandos.get_vomit(text))
+            elif command == 'vomit':
+                reply(comandos.get_vomit(msg['text']))
             #Envia uma frase específica
-            elif command == 'get_frase_numero':                
-                reply(comandos.get_frase_numero(text))
+            elif command == 'get_frase_numero':
+                reply(comandos.get_frase_numero(msg['text']))
             #Envia uma frase aleatória
             elif command == 'random':
-                reply(comandos.get_frase_random(text))
-            elif command == 'hype':                               
-                reply(comandos.get_hype(text))
+                reply(comandos.get_frase_random(msg['text']))
+            elif command == 'hype':
+                reply(comandos.get_hype(msg['text']))
             #Envia a lista de chamada
             elif command == 'chamada':
                 reply(comandos.get_vomit('chamada'))
