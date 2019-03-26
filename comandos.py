@@ -60,12 +60,13 @@ def reply(base_url, msg=None, img=None):
     if msg:
         logging.info('msg: ' + msg)
 
-def reply_forced(base_url,chat_id, msg=None):
+def reply_forced(base_url,chat_id,message_id,msg=None):
     if msg:
         resp = urllib2.urlopen(
             base_url + 'sendMessage', urllib.urlencode({
                 'chat_id': str(chat_id),
                 'text': msg.encode('utf-8'),
+                'reply_to_message_id': str(message_id),
                 'reply_markup': json.dumps({'force_reply': True, 'selective': True}),
             })
         ).read()
@@ -187,7 +188,7 @@ def add_frase(**msg):
     texto = text.split(' ', 1)[1]
 
     if texto == 'sticker':
-        add_sticker_reply(text, msg['user_id'])
+        add_sticker_reply(text, msg['chat_id'], msg['message_id'])
     else:    
         data.append(texto)
         try:
@@ -199,9 +200,9 @@ def add_frase(**msg):
             #reply('\n\nDeu um pau no seu programinha, bro')
             return '\n\nDeu um pau no seu programinha, bro'
 
-def add_sticker_reply(text, user_id):
+def add_sticker_reply(text, chat_id, message_id):
     txt = '' + text + ' = ' + 'Responda essa msg com o sticker'
-    reply_forced(BASE_URL,user_id,txt)
+    reply_forced(BASE_URL,chat_id,message_id, txt)
 
 def add_sticker(**msg):
     sticker_id = msg['sticker_id']
@@ -233,9 +234,10 @@ def get_frase_random(text):
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
 
-    data = abre_data(pessoa)            
+    data = abre_data(pessoa)
     tam = len(data)
     base = random.randint(0, tam - 1)
+    random.shuffle(data)
     return data[base]
 
 def get_vomit(text):
@@ -254,7 +256,7 @@ def get_vomit(text):
     for line in aux:
         if line.startswith('sti') and '=' in line:
             sticker, emoji = line.split('=', 1)
-            line = 'sticker ' + emoji + ' (' + sticker + ')'
+            line = '[ sticker ' + emoji + ' ]' #+ ' (' + sticker + ')'
         r.append(line)
 
     en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
@@ -323,13 +325,13 @@ def verifica_chamada(base_url=None, chat_id=None):
         if chat_id == None:
             return check1
         else:
-            reply(base_url, chat_id, check1)
+            reply(base_url, check1)
     if len(abre_data('chamada')) == 0:
         check2 = 'Cadastrar alguem na chamada'
         if chat_id == None:
             return check2
         else:
-            reply(base_url, chat_id, check2)
+            reply(base_url, check2)
     else:
         return get_vomit('chamada')
 
@@ -365,10 +367,11 @@ def extrai_texto(message):
         user_id = user['id']
         chat = message['chat']
         chat_id = chat['id']
+        message_id = message['message_id']
     except KeyError as e:
         logging.error(e)
         logging.error('erro na chave da mensagem')
-    return text, chat_id, user_id
+    return text, message_id, chat_id, user_id
 
 def extrai_reply(message):
     comando       = ''

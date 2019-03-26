@@ -8,7 +8,7 @@
 4. Realizar o deploy usando o Google App Engine
    1. No diretório do projeto, abrir um terminal
    2. Comando `gcloud app deploy --project PROJECTNAME`
-5. No Google Cloud Console, ir para `Datastore -> Entities`; filtrar por `"Settings"` e editar `TELEGRAM_TOKEN` para o token gerado pelo BotFather
+5. No Google Cloud Console, ir para [Datastore -> Entities](https://console.cloud.google.com/datastore/); filtrar por `"Settings"` e editar `TELEGRAM_TOKEN` para o token gerado pelo BotFather
 6. Acessar PROJECTNAME.appspot.com/me e aguardar mensagem de "ok"
 7. Setar o Webhook acessando https://PROJECTNAME.appspot.com/set_webhook?url=https://PROJECTNAME.appspot.com/webhook e aguardar mensagem "Webhook was set"
 8. Enviar comando no telegram ao bot de /start

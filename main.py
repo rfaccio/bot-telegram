@@ -109,9 +109,8 @@ class WebhookHandler(webapp2.RequestHandler):
         self.response.write(json.dumps(body))
         message = body['message']
         msg = {}
-        # msg = {'text': '', 'chat_id': '', 'user_id': '', 'reply_msg_txt': '', 'sticker_id': '', 'emoji': ''}
-        msg['text'], msg['chat_id'], msg['user_id'] = comandos.extrai_texto(message)
-        #text, chat_id, user_id = comandos.extrai_texto(message)
+        msg['text'], msg['message_id'], msg['chat_id'], msg['user_id'] = comandos.extrai_texto(message)
+
         if not msg['text']:
             msg['text'], msg['reply_msg_txt'], msg['sticker_id'], msg['emoji'] = comandos.extrai_reply(message)
 
