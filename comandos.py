@@ -56,6 +56,7 @@ def reply(base_url,chat_id, msg=None, img=None):
     
     logging.info('send response:')
     logging.info(resp)
+    logging.info('msg: ' + msg)
 
 def reply_forced(base_url,chat_id, msg=None):
     if msg:
@@ -101,10 +102,10 @@ def get_datafilename(pessoa):
 def file_exists(gcs_file):
     try:
         gcs.stat(gcs_file)
-        logging.info('arquivo existe')
+        logging.info('arquivo [' + gcs_file + '] existe')
         return True
     except Exception as e:
-        logging.info('arquivo nao existe')
+        logging.info('arquivo [' + gcs_file + '] nao existe')
         return False
 
 def write_file(filepath, content=None):
