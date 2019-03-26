@@ -364,6 +364,10 @@ def extrai_texto(message):
     return text, chat_id
 
 def extrai_reply(message):
+    comando       = ''
+    reply_msg_txt = 'not reply'
+    sticker_id    = 'not sticker'
+    emoji         = 'no emoji'
     try:
         if 'reply_to_message' in message:
             reply_to_message = message.get('reply_to_message')
@@ -373,11 +377,10 @@ def extrai_reply(message):
                 sticker = message['sticker']
                 sticker_id = sticker['file_id']
                 emoji = sticker['emoji']
+                comando = '/add_sticker'
                 logging.info('encontrou sticker: ' + sticker_id)
-        return '/add_sticker', reply_msg_txt, sticker_id, emoji
-        # if '_' in reply_msg_txt:
-        #     pessoa = reply_msg_txt.split('_', 1)[0]
-        # return '/add_sticker ' + reply_msg_txt + sticker_id
+        
+        return comando, reply_msg_txt, sticker_id, emoji
     except Exception as e:
         logging.info('not reply')
-        return '','false', 'false'
+        return 'error','false', 'false', 'false'
