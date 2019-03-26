@@ -4,9 +4,10 @@
 
 1. Criar projeto no Google Cloud (cloud.google.com)
 2. Copiar o nome do projeto e atualizar o arquivo app.yaml
-3. Criar um bot através do BotFather no Telegram
-4. Copiar o TOKEN e salvar em um arquivo config.py (adicionar config.py ao gitignore)
-5. Realizar o deploy usando o Google App Engine
+3. Criar um bot através do BotFather no Telegram e copiar seu Token
+4. Realizar o deploy usando o Google App Engine
+5. Setar o Webhook com "projeto".appspot.com/SetWebhook?url="projeto".appspot.com/Webhook
+6. No Google Cloud Console, ir para Datastore -> Entities; filtrar por "Settings" e editar TELEGRAM_TOKEN para o token gerado pelo BotFather
 
 ## Utilizando
 

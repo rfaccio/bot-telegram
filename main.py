@@ -122,6 +122,7 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('no text')
             return
 
+        logging.info('text is: ' + text)
         if text.startswith('/'):
             text = text.split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
