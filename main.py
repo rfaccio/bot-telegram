@@ -20,6 +20,7 @@ import os
 import cloudstorage as gcs
 from google.appengine.api import app_identity
 
+# Funcionalidades
 import config
 import comandos
 
@@ -48,43 +49,16 @@ def getEnabled(chat_id):
         return es.enabled
     return False
 
-class SetBucket(webapp2.RequestHandler):
-    def get(self):
-        bucket_name = os.environ.get('BUCKET_NAME',
-                                    app_identity.get_default_gcs_bucket_name())
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Demo GCS Application running from Version ' + 
-                            os.environ['CURRENT_VERSION_ID'] + '\n')
-        self.response.write('Using bucket name: ' + bucket_name + '\n\n')
-        
-        bucket = '/' + bucket_name
-        filename = bucket + '/data_greg.txt'
-        self.tmp_filenames_to_clean_up = []
-
-        try:
-            self.read_file(filename)
-            self.response.write('\n\n')
-        
-        except Exception as e:
-            logging.exception(e)
-            self.response.write('\n\nThere was an error running the demo! '
-                                'Please check the logs for more details.\n')
-        
-        def read_file(self, filename):            
-            self.response.write(comandos.verifica_chamada())
-
 class MeHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL +
-                                                                 'getMe'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getMe'))))
 
 
 class GetUpdatesHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(
-            json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
 
 
 class SetWebhookHandler(webapp2.RequestHandler):
@@ -93,8 +67,7 @@ class SetWebhookHandler(webapp2.RequestHandler):
         url = self.request.get('url')
         if url:
             self.response.write(
-                json.dumps(json.load(urllib2.urlopen(
-                    BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
+                json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
 
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
@@ -107,7 +80,13 @@ class WebhookHandler(webapp2.RequestHandler):
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
-        message = body['message']
+
+        # recupera informações da mensagem
+        try:
+            message = body['message']
+        except:
+            message = body['edited_message']
+
         msg = {}
         msg['text'], msg['message_id'], msg['chat_id'], msg['user_id'] = comandos.extrai_texto(message)
 
@@ -171,5 +150,4 @@ app = webapp2.WSGIApplication([
     ('/updates', GetUpdatesHandler),
     ('/set_webhook', SetWebhookHandler),
     ('/webhook', WebhookHandler),
-    ('/bucket', SetBucket),
 ], debug=True)

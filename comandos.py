@@ -363,11 +363,14 @@ def del_frase(text):
 def extrai_texto(message):
     try:        
         text = message.get('text')
-        user = message['from']
+
+        user = message.get('from')
         user_id = user['id']
+
         chat = message['chat']
         chat_id = chat['id']
-        message_id = message['message_id']
+
+        message_id = message.get('message_id')
     except KeyError as e:
         logging.error(e)
         logging.error('erro na chave da mensagem')
