@@ -186,9 +186,11 @@ def add_frase(**msg):
     if not ' ' in text:
         return 'Escreva uma frase poxa'
     texto = text.split(' ', 1)[1]
-
+    logging.info('texto p/ adicionar: ' + texto)
     if texto == 'sticker':
         add_sticker_reply(text, msg['chat_id'], msg['message_id'])
+    if texto.startswith('/'):
+        return 'melhor nao fazer isso'
     else:    
         data.append(texto)
         try:
@@ -220,12 +222,16 @@ def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
-
     data = abre_data(pessoa)
     tam = len(data)
-    i = int(numero) - 1
+    try:
+        i = int(numero) - 1
+    except Exception as e:
+        logging.exception(e)
+        return 'Aqui eh o hacker (deu merda)'
     if 0 <= i < tam:
-        return data[i]
+        logging.info('resposta: ' + pessoa + ':\n\n ' + data[i])
+        return pessoa + ':\n\n ' + data[i]
     else:
         return 'Tente outro numero amg'
 
@@ -238,7 +244,11 @@ def get_frase_random(text):
     tam = len(data)
     base = random.randint(0, tam - 1)
     random.shuffle(data)
-    return data[base]
+    logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
+    if data[base].startswith('sti') and '=' in data[base]:
+        return data[base]
+    return pessoa + ':\n' + data[base]
+    #return data[base]
 
 def get_vomit(text):
     if '_' in text:
