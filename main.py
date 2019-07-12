@@ -20,6 +20,7 @@ import os
 import cloudstorage as gcs
 from google.appengine.api import app_identity
 
+# Funcionalidades
 import config
 import comandos
 
@@ -48,43 +49,16 @@ def getEnabled(chat_id):
         return es.enabled
     return False
 
-class SetBucket(webapp2.RequestHandler):
-    def get(self):
-        bucket_name = os.environ.get('BUCKET_NAME',
-                                    app_identity.get_default_gcs_bucket_name())
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Demo GCS Application running from Version ' + 
-                            os.environ['CURRENT_VERSION_ID'] + '\n')
-        self.response.write('Using bucket name: ' + bucket_name + '\n\n')
-        
-        bucket = '/' + bucket_name
-        filename = bucket + '/data_greg.txt'
-        self.tmp_filenames_to_clean_up = []
-
-        try:
-            self.read_file(filename)
-            self.response.write('\n\n')
-        
-        except Exception as e:
-            logging.exception(e)
-            self.response.write('\n\nThere was an error running the demo! '
-                                'Please check the logs for more details.\n')
-        
-        def read_file(self, filename):            
-            self.response.write(comandos.verifica_chamada())
-
 class MeHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL +
-                                                                 'getMe'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getMe'))))
 
 
 class GetUpdatesHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(
-            json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
 
 
 class SetWebhookHandler(webapp2.RequestHandler):
@@ -93,72 +67,78 @@ class SetWebhookHandler(webapp2.RequestHandler):
         url = self.request.get('url')
         if url:
             self.response.write(
-                json.dumps(json.load(urllib2.urlopen(
-                    BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
+                json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
 
 class WebhookHandler(webapp2.RequestHandler):
     def post(self):
         #Envia o texto de resposta para o chat
-        def reply(msg=None, img=None):
-            comandos.reply(BASE_URL,chat_id,msg,img)
+        def reply(message=None, img=None):
+            comandos.reply(BASE_URL,message,img)
 
         urlfetch.set_default_fetch_deadline(60)
         body = json.loads(self.request.body)
         logging.info('request body:')
         logging.info(body)
         self.response.write(json.dumps(body))
-        message = body['message']
 
-        text, chat_id = comandos.extrai_texto(message)
-        if not text:
-            text, reply_msg_txt, sticker_id, emoji = comandos.extrai_reply(message)
+        # recupera informações da mensagem
+        try:
+            message = body['message']
+        except:
+            message = body['edited_message']
+
+        msg = {}
+        msg['text'], msg['message_id'], msg['chat_id'], msg['user_id'] = comandos.extrai_texto(message)
+
+        if not msg['text']:
+            msg['text'], msg['reply_msg_txt'], msg['sticker_id'], msg['emoji'] = comandos.extrai_reply(message)
 
         #inicializa algumas variáveis globais
-        comandos.inicializa(BASE_URL, chat_id)
+        comandos.inicializa(BASE_URL,msg['chat_id'])
         #verifica a necessidade de criar nova chamada
-        comandos.verifica_chamada(BASE_URL,chat_id)
+        comandos.verifica_chamada(BASE_URL,msg['chat_id'])
 
-        if not text:
+        if not msg['text']:
             logging.info('no text')
             return
 
-        logging.info('text is: ' + text)
-        if text.startswith('/'):
-            text = text.split('/')[1]
+        logging.info('text is: ' + msg['text'])
+        if msg['text'].startswith('/'):
+            msg['text'] = msg['text'].split('/')[1]
             #remove sufixo do bot do telegram "@NOMEDOBOT"
             #extrai apenas o comando            
-            command = comandos.get_comando(text.lower().split("@")[0])          
+            command = comandos.get_comando(msg['text'].lower().split("@")[0])
 
             #COMANDOS
             #Liga e desliga o bot
             if command == 'start':
                 reply('Acordei')
-                setEnabled(chat_id, True)
+                setEnabled(msg['chat_id'], True)
             elif command == 'stop':
                 reply('Dormi')
-                setEnabled(chat_id, False)
+                setEnabled(msg['chat_id'], False)
             #Adiciona nova pessoa à lista de chamada e cria arquivo data_PESSOA
-            elif command == 'add_pessoa':                
-                reply(comandos.add_pessoa(text))
+            elif command == 'add_pessoa':
+                reply(comandos.add_pessoa(msg['text']))
             #Adiciona nova frase para uma pessoa
-            elif command == 'add_frase':                
-                reply(comandos.add_frase(text))
+            elif command == 'add_frase':
+                reply(comandos.add_frase(**msg))
             elif command == 'del_frase':
-                reply(comandos.del_frase(text))
+                reply(comandos.del_frase(msg['text']))
             #Adiciona o sticker enviado como repsta ao "add_frase sticker"
             elif command == 'add_sticker':
-                reply(comandos.add_sticker(sticker_id,reply_msg_txt,emoji))              
+                reply(comandos.add_sticker(**msg))
             #Envia todas as frases de uma pessoa
-            elif command == 'vomit':                              
-                reply(comandos.get_vomit(text))
+            elif command == 'vomit':
+                reply(comandos.get_vomit(msg['text']))
             #Envia uma frase específica
-            elif command == 'get_frase_numero':                
-                reply(comandos.get_frase_numero(text))
+            elif command == 'get_frase_numero':
+                reply(comandos.get_frase_numero(msg['text']))
             #Envia uma frase aleatória
             elif command == 'random':
-                reply(comandos.get_frase_random(text))
-            elif command == 'hype':                               
-                reply(comandos.get_hype(text))
+                reply(comandos.get_frase_random(msg['text']))
+            elif command == 'hype':
+                reply(comandos.get_hype(msg['text']))
             #Envia a lista de chamada
             elif command == 'chamada':
                 reply(comandos.get_vomit('chamada'))
@@ -170,5 +150,4 @@ app = webapp2.WSGIApplication([
     ('/updates', GetUpdatesHandler),
     ('/set_webhook', SetWebhookHandler),
     ('/webhook', WebhookHandler),
-    ('/bucket', SetBucket),
 ], debug=True)

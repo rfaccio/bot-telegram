@@ -27,7 +27,8 @@ chat_id = ''
 BASE_URL = ''
 
 #Envia o texto de resposta para o chat
-def reply(base_url,chat_id, msg=None, img=None):    
+def reply(base_url, msg=None, img=None):
+    global chat_id
     if msg:
         if msg.startswith('sti'):
             msg = msg.split('=', 1)[0]
@@ -56,14 +57,16 @@ def reply(base_url,chat_id, msg=None, img=None):
     
     logging.info('send response:')
     logging.info(resp)
-    logging.info('msg: ' + msg)
+    if msg:
+        logging.info('msg: ' + msg)
 
-def reply_forced(base_url,chat_id, msg=None):
+def reply_forced(base_url,chat_id,message_id,msg=None):
     if msg:
         resp = urllib2.urlopen(
             base_url + 'sendMessage', urllib.urlencode({
                 'chat_id': str(chat_id),
                 'text': msg.encode('utf-8'),
+                'reply_to_message_id': str(message_id),
                 'reply_markup': json.dumps({'force_reply': True, 'selective': True}),
             })
         ).read()
@@ -173,7 +176,8 @@ def abre_data(pessoa):
             retorno.append(line.rstrip())
     return retorno
 
-def add_frase(text):
+def add_frase(**msg):
+    text = msg['text']
     pessoa = text.split('_', 1)[0]
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
@@ -182,9 +186,11 @@ def add_frase(text):
     if not ' ' in text:
         return 'Escreva uma frase poxa'
     texto = text.split(' ', 1)[1]
-
+    logging.info('texto p/ adicionar: ' + texto)
     if texto == 'sticker':
-        add_sticker_reply(text)
+        add_sticker_reply(text, msg['chat_id'], msg['message_id'])
+    if texto.startswith('/'):
+        return 'melhor nao fazer isso'
     else:    
         data.append(texto)
         try:
@@ -196,29 +202,36 @@ def add_frase(text):
             #reply('\n\nDeu um pau no seu programinha, bro')
             return '\n\nDeu um pau no seu programinha, bro'
 
-def add_sticker_reply(text):
+def add_sticker_reply(text, chat_id, message_id):
     txt = '' + text + ' = ' + 'Responda essa msg com o sticker'
-    reply_forced(BASE_URL,chat_id,txt)
+    reply_forced(BASE_URL,chat_id,message_id, txt)
 
-def add_sticker(sticker_id,text,emoji):
+def add_sticker(**msg):
+    sticker_id = msg['sticker_id']
+    text       = msg['reply_msg_txt']
+    emoji      = msg['emoji']
     if '_' in text:
         pessoa = text.split('_', 1)[0]
     else:
         pessoa = 'erro'
-    
-    txt = pessoa + '_add sti:' + sticker_id + '=' + emoji
-    return add_frase(txt)
+
+    msg['text'] = pessoa + '_add sti:' + sticker_id + '=' + emoji
+    return add_frase(**msg)
 
 def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
-
-    data = abre_data(pessoa)                
+    data = abre_data(pessoa)
     tam = len(data)
-    i = int(numero) - 1
+    try:
+        i = int(numero) - 1
+    except Exception as e:
+        logging.exception(e)
+        return 'Aqui eh o hacker (deu merda)'
     if 0 <= i < tam:
-        return data[i]
+        logging.info('resposta: ' + pessoa + ':\n\n ' + data[i])
+        return pessoa + ':\n\n ' + data[i]
     else:
         return 'Tente outro numero amg'
 
@@ -227,10 +240,15 @@ def get_frase_random(text):
     if not verifica_pessoa(pessoa):
         return 'Pessoa nao existe'
 
-    data = abre_data(pessoa)            
+    data = abre_data(pessoa)
     tam = len(data)
     base = random.randint(0, tam - 1)
-    return data[base]
+    random.shuffle(data)
+    logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
+    if data[base].startswith('sti') and '=' in data[base]:
+        return data[base]
+    return pessoa + ':\n' + data[base]
+    #return data[base]
 
 def get_vomit(text):
     if '_' in text:
@@ -248,7 +266,7 @@ def get_vomit(text):
     for line in aux:
         if line.startswith('sti') and '=' in line:
             sticker, emoji = line.split('=', 1)
-            line = 'sticker ' + emoji + ' (' + sticker + ')'
+            line = '[ sticker ' + emoji + ' ]' #+ ' (' + sticker + ')'
         r.append(line)
 
     en_r = [unicode(r.index(x) + 1) + ': ' + x for x in r]
@@ -317,13 +335,13 @@ def verifica_chamada(base_url=None, chat_id=None):
         if chat_id == None:
             return check1
         else:
-            reply(base_url, chat_id, check1)
+            reply(base_url, check1)
     if len(abre_data('chamada')) == 0:
         check2 = 'Cadastrar alguem na chamada'
         if chat_id == None:
             return check2
         else:
-            reply(base_url, chat_id, check2)
+            reply(base_url, check2)
     else:
         return get_vomit('chamada')
 
@@ -355,14 +373,18 @@ def del_frase(text):
 def extrai_texto(message):
     try:        
         text = message.get('text')
-        user = message['from']
+
+        user = message.get('from')
         user_id = user['id']
+
         chat = message['chat']
         chat_id = chat['id']
+
+        message_id = message.get('message_id')
     except KeyError as e:
         logging.error(e)
         logging.error('erro na chave da mensagem')
-    return text, chat_id
+    return text, message_id, chat_id, user_id
 
 def extrai_reply(message):
     comando       = ''
