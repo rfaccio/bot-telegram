@@ -147,6 +147,20 @@ def verifica_pessoa(pessoa):
     else:
         return False
 
+def verifica_outros(outro):
+    if not file_exists(get_datafilename(outro)):
+        False, ''
+    if file_exists(get_datafilename('outros')):
+        return True, ''
+        outros = abre_data('outros')
+        for line in outros:
+            if ':' in line:
+                o, a = line.split(':', 1)
+                if outro == o:
+                    return True, a
+    else:
+        return True, ''
+
 def add_pessoa(text):
     pessoa = text.split(' ', 1)[1]
 
@@ -154,17 +168,21 @@ def add_pessoa(text):
     logging.info('Adicionando nova pessoa: ' + pessoa)
     if len(pessoa) >= 1 and not verifica_pessoa(pessoa):
         #adiciona
-        chamada.append(pessoa)
-        try:
-            #adiciona na chamada
-            write_file(arquivo_chamada,chamada)           
-            #cria arquivo de frases vazio
-            write_file(get_datafilename(pessoa))   
-            return pessoa + ' adicionadx com sucesso!'
+        existe, action = verifica_outros(pessoa)
+        if not existe:
+            chamada.append(pessoa)
+            try:
+                #adiciona na chamada
+                write_file(arquivo_chamada,chamada)           
+                #cria arquivo de frases vazio
+                write_file(get_datafilename(pessoa))   
+                return pessoa + ' adicionadx com sucesso!'
 
-        except Exception as e:
-            logging.exception(e)
-            return 'Deu um pau no seu programinha, bro'
+            except Exception as e:
+                logging.exception(e)
+                return 'Deu um pau no seu programinha, bro'
+        else:
+            return 'Pessoa ja existe ou nome invalido'
     else:
         return 'Pessoa ja existe ou nome invalido'
 
@@ -220,25 +238,38 @@ def add_sticker(**msg):
 
 def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
+    pessoa = pessoa.lower()
+
     if not verifica_pessoa(pessoa):
-        return 'Pessoa nao existe'
+        existe, action = verifica_outros(pessoa)
+        if not existe:
+            return 'Pessoa nao existe'
+
     data = abre_data(pessoa)
     tam = len(data)
+
     try:
         i = int(numero) - 1
     except Exception as e:
         logging.exception(e)
         return 'Aqui eh o hacker (deu merda)'
+
     if 0 <= i < tam:
         logging.info('resposta: ' + pessoa + ':\n\n ' + data[i])
-        return pessoa + ':\n\n ' + data[i]
+        if data[i].startswith('sti') and '=' in data[i]:
+            return data[i]
+        if not action == '':
+            pessoa = action
+        return pessoa + ':\n' + data[i]
     else:
         return 'Tente outro numero amg'
 
 def get_frase_random(text):
     pessoa = text.lower().split("@")[0]
     if not verifica_pessoa(pessoa):
-        return 'Pessoa nao existe'
+        existe, action = verifica_outros(pessoa)
+        if not existe:
+            return 'Pessoa nao existe'
 
     data = abre_data(pessoa)
     tam = len(data)
@@ -247,6 +278,8 @@ def get_frase_random(text):
     logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
     if data[base].startswith('sti') and '=' in data[base]:
         return data[base]
+    if not action == '':
+            pessoa = action
     return pessoa + ':\n' + data[base]
     #return data[base]
 
