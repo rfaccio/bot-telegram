@@ -198,7 +198,9 @@ def add_frase(**msg):
     text = msg['text']
     pessoa = text.split('_', 1)[0]
     if not verifica_pessoa(pessoa):
-        return 'Pessoa nao existe'
+        existe, action = verifica_outros(pessoa)
+        if not existe:
+            return 'Pessoa nao existe'
     data = abre_data(pessoa)
 
     if not ' ' in text:
@@ -258,8 +260,6 @@ def get_frase_numero(text):
         logging.info('resposta: ' + pessoa + ':\n\n ' + data[i])
         if data[i].startswith('sti') and '=' in data[i]:
             return data[i]
-        if not action == '':
-            pessoa = action
         return pessoa + ':\n' + data[i]
     else:
         return 'Tente outro numero amg'
@@ -278,8 +278,6 @@ def get_frase_random(text):
     logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
     if data[base].startswith('sti') and '=' in data[base]:
         return data[base]
-    if not action == '':
-            pessoa = action
     return pessoa + ':\n' + data[base]
     #return data[base]
 
