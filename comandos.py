@@ -168,7 +168,8 @@ def add_pessoa(text):
     logging.info('Adicionando nova pessoa: ' + pessoa)
     if len(pessoa) >= 1 and not verifica_pessoa(pessoa):
         #adiciona
-        existe, action = verifica_outros(pessoa)
+        #existe, action = verifica_outros(pessoa)
+        existe = False
         if not existe:
             chamada.append(pessoa)
             try:
@@ -247,10 +248,10 @@ def get_frase_numero(text):
         if not existe:
             return 'Pessoa nao existe'
 
-    data = abre_data(pessoa)
-    tam = len(data)
-
     try:
+        data = abre_data(pessoa)
+        tam = len(data)
+
         i = int(numero) - 1
     except Exception as e:
         logging.exception(e)
@@ -270,15 +271,18 @@ def get_frase_random(text):
         existe, action = verifica_outros(pessoa)
         if not existe:
             return 'Pessoa nao existe'
-
-    data = abre_data(pessoa)
-    tam = len(data)
-    base = random.randint(0, tam - 1)
-    random.shuffle(data)
-    logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
-    if data[base].startswith('sti') and '=' in data[base]:
-        return data[base]
-    return pessoa + ':\n' + data[base]
+    try:
+        data = abre_data(pessoa)
+        tam = len(data)
+        base = random.randint(0, tam - 1)
+        random.shuffle(data)
+        logging.info('resposta: ' + pessoa + ':\n\n ' + data[base])
+        if data[base].startswith('sti') and '=' in data[base]:
+            return data[base]
+        return pessoa + ':\n' + data[base]
+    except Exception as e:
+        logging.exception(e)
+        return 'Aqui eh o hacker (deu merda)'
     #return data[base]
 
 def get_vomit(text):
