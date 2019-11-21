@@ -122,7 +122,7 @@ def write_file(filepath, content=None):
                 write_to_file.write("%s\n" % (line.encode('utf-8')))
 
 def cria_chamada(chat_id=None):
-    
+
     filepath = arquivo_chamada
     try:
         if not file_exists(filepath):
@@ -431,6 +431,8 @@ def extrai_reply(message):
             reply_to_message = message.get('reply_to_message')
             reply_msg_txt = reply_to_message['text']
             logging.info('encontrou reply_to_message: ' + reply_msg_txt)
+            if reply_msg_txt != 'Responda essa msg com o sticker':
+                raise Exception('n responda isso')
             if 'sticker' in message:
                 sticker = message['sticker']
                 sticker_id = sticker['file_id']
