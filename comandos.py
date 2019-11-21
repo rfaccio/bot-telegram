@@ -210,7 +210,7 @@ def add_frase(**msg):
     logging.info('texto p/ adicionar: ' + texto)
     if texto == 'sticker':
         add_sticker_reply(text, msg['chat_id'], msg['message_id'])
-    if texto.startswith('/'):
+    elif texto.startswith('/'):
         return 'melhor nao fazer isso'
     else:    
         data.append(texto)
