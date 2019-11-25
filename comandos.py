@@ -88,7 +88,7 @@ def send_action(action):
     else:
         logging.error('no action specified')
         resp = None
-    logging.info('sent action: ', action)
+    logging.info('sent action: ', str(action))
     logging.info(resp)
 
 def inicializa(baseurl, chatid):
@@ -216,7 +216,10 @@ def add_frase(**msg):
         existe, action = verifica_outros(pessoa)
         if not existe:
             return 'Pessoa nao existe'
-    data = abre_data(pessoa)
+    try:
+        data = abre_data(pessoa)
+    except Exception as e:
+        return ''
 
     if not ' ' in text:
         return 'Escreva uma frase poxa'
