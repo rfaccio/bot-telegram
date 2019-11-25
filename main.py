@@ -101,6 +101,8 @@ class WebhookHandler(webapp2.RequestHandler):
         if not msg['text']:
             logging.info('no text')
             return
+        
+        comandos.send_action('typing')
 
         logging.info('text is: ' + msg['text'])
         if msg['text'].startswith('/'):

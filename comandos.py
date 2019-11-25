@@ -77,6 +77,20 @@ def reply_forced(base_url,chat_id,message_id,msg=None):
     logging.info('send response:')
     logging.info(resp)
 
+def send_action(action):
+    if action:
+        resp = urllib2.urlopen(
+            BASE_URL + 'sendChatAction', urllib.urlencode({
+                'chat_id': str(chat_id),
+                'action': str(action)
+            })
+        ).read()
+    else:
+        logging.error('no action specified')
+        resp = None
+    logging.info('sent action: ', action)
+    logging.info(resp)
+
 def inicializa(baseurl, chatid):
     set_chat_id(chatid)
     set_base_url(baseurl)
