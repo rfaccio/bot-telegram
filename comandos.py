@@ -88,7 +88,7 @@ def send_action(action):
     else:
         logging.error('no action specified')
         resp = None
-    logging.info('sent action: ', str(action))
+    logging.info('sent chat action')
     logging.info(resp)
 
 def inicializa(baseurl, chatid):
