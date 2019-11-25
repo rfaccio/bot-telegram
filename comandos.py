@@ -431,7 +431,7 @@ def extrai_reply(message):
             reply_to_message = message.get('reply_to_message')
             reply_msg_txt = reply_to_message['text']
             logging.info('encontrou reply_to_message: ' + reply_msg_txt)
-            if reply_msg_txt != 'Responda essa msg com o sticker':
+            if 'sticker' not in reply_msg_txt:
                 raise Exception('n responda isso')
             if 'sticker' in message:
                 sticker = message['sticker']
