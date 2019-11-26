@@ -24,3 +24,16 @@ class Settings(ndb.Model):
 # Select your project at the top of the page if it's not already selected.
 # In the Kind dropdown box, select Settings.
 # If you ran the code above, your keys will show up. They will all have the value NOT SET. Click each one and set its value.
+
+class Frase(ndb.Model):
+  texto = ndb.StringProperty()
+
+class Pessoa(ndb.Model):
+  nome = ndb.StringProperty()
+  #frases = ndb.StructuredProperty(Frase, repeated=True)
+  frases = ndb.StringProperty(repeated=True)
+
+class Chat(ndb.Model):
+  chatId = ndb.StringProperty()
+  chamada = ndb.StructuredProperty(Pessoa, repeated=True)
+  #chamada = ndb.StringProperty(repeated=True)

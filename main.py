@@ -103,6 +103,23 @@ class WebhookHandler(webapp2.RequestHandler):
             return
         
         comandos.send_action('typing')
+        
+        testeDatastore = config.Chat(
+            chatId = str(msg['chat_id']),
+            chamada = [
+                config.Pessoa(
+                    nome = 'TestePessoa1',
+                    #frases = [ config.Frase( texto = 'texto1' ), config.Frase( texto = 'texto2' )
+                    frases = ['texto1', 'texto2']
+                    ),
+                config.Pessoa(
+                    nome = 'Fulano',
+                    #frases = [ config.Frase( texto = 'blablabla' )]
+                    frases = ['blablabla']
+                )
+            ]
+        )
+        testeDatastore.put()
 
         logging.info('text is: ' + msg['text'])
         if msg['text'].startswith('/'):
