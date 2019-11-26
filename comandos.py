@@ -77,6 +77,20 @@ def reply_forced(base_url,chat_id,message_id,msg=None):
     logging.info('send response:')
     logging.info(resp)
 
+def send_action(action):
+    if action:
+        resp = urllib2.urlopen(
+            BASE_URL + 'sendChatAction', urllib.urlencode({
+                'chat_id': str(chat_id),
+                'action': str(action)
+            })
+        ).read()
+    else:
+        logging.error('no action specified')
+        resp = None
+    logging.info('sent chat action')
+    logging.info(resp)
+
 def inicializa(baseurl, chatid):
     set_chat_id(chatid)
     set_base_url(baseurl)
@@ -122,7 +136,7 @@ def write_file(filepath, content=None):
                 write_to_file.write("%s\n" % (line.encode('utf-8')))
 
 def cria_chamada(chat_id=None):
-    
+
     filepath = arquivo_chamada
     try:
         if not file_exists(filepath):
@@ -202,7 +216,10 @@ def add_frase(**msg):
         existe, action = verifica_outros(pessoa)
         if not existe:
             return 'Pessoa nao existe'
-    data = abre_data(pessoa)
+    try:
+        data = abre_data(pessoa)
+    except Exception as e:
+        return ''
 
     if not ' ' in text:
         return 'Escreva uma frase poxa'
@@ -210,7 +227,7 @@ def add_frase(**msg):
     logging.info('texto p/ adicionar: ' + texto)
     if texto == 'sticker':
         add_sticker_reply(text, msg['chat_id'], msg['message_id'])
-    if texto.startswith('/'):
+    elif texto.startswith('/'):
         return 'melhor nao fazer isso'
     else:    
         data.append(texto)
@@ -431,6 +448,8 @@ def extrai_reply(message):
             reply_to_message = message.get('reply_to_message')
             reply_msg_txt = reply_to_message['text']
             logging.info('encontrou reply_to_message: ' + reply_msg_txt)
+            if 'sticker' not in reply_msg_txt:
+                raise Exception('n responda isso')
             if 'sticker' in message:
                 sticker = message['sticker']
                 sticker_id = sticker['file_id']
