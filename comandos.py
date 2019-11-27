@@ -258,7 +258,6 @@ def add_sticker(**msg):
 
 def get_frase_numero(text):
     pessoa, numero = text.split(' ', 1)
-    pessoa = pessoa.lower()
 
     if not verifica_pessoa(pessoa):
         existe, action = verifica_outros(pessoa)
