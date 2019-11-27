@@ -283,7 +283,7 @@ def get_frase_numero(text):
         return 'Tente outro numero amg'
 
 def get_frase_random(text):
-    pessoa = text.lower().split("@")[0]
+    pessoa = text.split("@")[0]
     if not verifica_pessoa(pessoa):
         existe, action = verifica_outros(pessoa)
         if not existe:
